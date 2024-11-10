@@ -1,4 +1,8 @@
 __pycache__/
 *~
 *.txt
-data/
+*.ag
+*.png
+*.jpg
+*.csv
+*.pdf
