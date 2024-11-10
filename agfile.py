@@ -1,3 +1,5 @@
+import argparse
+
 def read_ag_file(filename,
                  frequency = None,
                  acc_range = None,
@@ -65,6 +67,23 @@ def read_ag_file(filename,
             'grav': grav,
             'measurements': measurements}
 
+def main():
+    """
+        Runs read_ag_file() from console with a filename as an argument and
+            displays the values of frequency, acc_range, gyr_range, and the number
+            of measurements.
+    """
+    parser = argparse.ArgumentParser(
+        prog = 'python3 agfile.py',
+        description = 'Reads a text file with the measurements from accelerometer and gyroscope and displays the values of frequency, acc_range, gyr_range, and the number of measurements.',
+        epilog = 'Text at the bottom of help')
+    parser.add_argument("input", help = "input AG file")
+    args = parser.parse_args()
+    ag_data = read_ag_file(args.input)
+    print('frequency:', ag_data['frequency'])
+    print('acc_range:', ag_data['acc_range'])
+    print('gyr_range:', ag_data['gyr_range'])
+    print('measurements:', len(ag_data['measurements']))
 
-result = read_ag_file('a.txt')
-print('result:', result)
+if __name__ == "__main__":
+    main()
