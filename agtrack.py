@@ -14,10 +14,12 @@ class AGTracker:
             (gravitational acceleration)
         gyr_range (int): gyroscope range in degrees per second
         grav (float): gravitational acceleration in m*s^(-2); `9.80665` by default
-        measurements (list of ((float, float, float), (float, float, float))):
-            list of `((ax, ay, az), (gx, gy, gz))` where `(ax, ay, az)` is
-            the acceleration and `(gx, gy, gz)` is the angular velocity
+        measurements (list of (numpy.array, numpy.array)):
+            list of `([ax, ay, az], [gx, gy, gz])` where `[ax, ay, az]` is
+            the acceleration and `[gx, gy, gz]` is the angular velocity
             given by the gyroscope
+        trajectory (list of numpy.array): the resulting trajectory as a list of
+            positions (i.e. three coordinates)
         quiet (bool): suppress warnings; `False` by default
     """
 
@@ -46,7 +48,12 @@ class AGTracker:
         self.grav = grav
         self.quiet = quiet
         self.measurements = None
+        self.trajectory = None
         self.load()
+        self.plot_t = []
+        self.plot_x = []
+        self.plot_y = []
+        self.plot_z = []
 
     def load(self):
         """
@@ -123,84 +130,9 @@ class AGTracker:
                     # save data
                     acceleration = [v*acc_coef*self.grav for v in numbers[:3]]
                     angular_velocity = [v*gyr_coef for v in numbers[3:]]
-                    self.measurements.append((tuple(acceleration), tuple(angular_velocity)))
+                    #self.measurements.append((tuple(acceleration), tuple(angular_velocity)))
+                    self.measurements.append((np.array(acceleration), np.array(angular_velocity)))
 
-    def parse(self):
-        #print(self.ag_data['measurements'])
-        for (acc, gyr) in self.measurements:
-            print(acc, gyr)
-
-    def draw(self):
-        import matplotlib.pyplot as plt
-        pos_x = []
-        pos_y = []
-        pos_z = []
-        for item in self.history:
-            pos_x.append(item['position'][0])
-            pos_y.append(item['position'][1])
-            pos_z.append(item['position'][2])
-
-        fig = plt.figure().add_subplot(projection='3d')
-
-        fig.plot(pos_x, pos_y, pos_z, "b.", label='parametric curve')
-        fig.legend()
-
-        plt.show()
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input", help = "input data file")
-    parser.add_argument("-f", help = "sampling frequency [Hz], e.g. 833, 1660")
-    parser.add_argument("-a", help = "acceleration range (multiple of the gravitational acceleration), e.g. 2, 4, 8")
-    parser.add_argument("-g", help = "gyroscope range [deg/s], e.g. 16, 125, 250, 500, 1000, 2000")
-    parser.add_argument("--grav", help = "gravitational acceleration in m/s^2; 9.80665 by default")
-    parser.add_argument("-q", action = "store_true", help = "suppress warnings")
-    parser.add_argument("--draw", action = "store_true", help = "draw a plot")
-
-    args = parser.parse_args()
-    if args.f:
-        frequency = int(args.f)
-    else:
-        frequency = None
-    if args.a:
-        acc_range = int(args.a)
-    else:
-        acc_range = None
-    if args.g:
-        gyr_range = int(args.g)
-    else:
-        gyr_range = None
-    if args.grav:
-        grav = float(args.grav)
-    else:
-        grav = 9.80665
-    if args.q:
-        quiet = True
-    else:
-        quiet = False
-
-    agtracker = AGTracker(args.input,
-                          frequency = frequency,
-                          acc_range = acc_range,
-                          gyr_range = gyr_range,
-                          grav = grav,
-                          quiet = quiet)
-    #agtracker.parse()
-
-    if args.draw:
-        agtracker.draw()
-
-if __name__ == "__main__":
-    main()
-
-
-
-
-#class AGTracker:
-#
-#    def __init__(self, file_name, frequency, acc_range, gyr_range):
-#        self.load_file(file_name, frequency, acc_range, gyr_range)
-#
 #    def load_file(self, file_name, frequency, acc_range, gyr_range):
 #        self.history = []
 #        self.file_name = file_name
@@ -252,38 +184,106 @@ if __name__ == "__main__":
 #                    #history_item['angle'] = copy.copy(angle)
 #                    self.history.append(history_item)
 #                    time += self.period
-#
-#    def draw(self):
-#        import matplotlib.pyplot as plt
-#        pos_x = []
-#        pos_y = []
-#        pos_z = []
-#        for item in self.history:
-#            pos_x.append(item['position'][0])
-#            pos_y.append(item['position'][1])
-#            pos_z.append(item['position'][2])
-#
-#        fig = plt.figure().add_subplot(projection='3d')
-#
-#        fig.plot(pos_x, pos_y, pos_z, "b.", label='parametric curve')
-#        fig.legend()
-#
-#        plt.show()
-#
-#def main():
-#    parser = argparse.ArgumentParser()
-#    parser.add_argument("input", help = "input data file")
-#    parser.add_argument("-a", help = "acceleration range (multiple of 9.80665 m/s^2), e.g. 2, 4, 8")
-#    parser.add_argument("-g", help = "gyroscope range [deg/s], e.g. 16, 125, 250, 500, 1000, 2000")
-#    parser.add_argument("-f", help = "sampling frequency [Hz], e.g. 833, 1660")
-#    parser.add_argument("--draw", action = "store_true", help = "draw a plot")
-#
-#    args = parser.parse_args()
-#
-#    agtracker = AGTracker(args.input, int(args.f), int(args.a), int(args.g))
-#
-#    if args.draw:
-#        agtracker.draw()
-#
-#if __name__ == "__main__":
-#    main()
+    def parse(self):
+        # The initial acceleration
+        #   It will be computed as the average of the first n measurements,
+        #   where n is the values of `init_acc_range`.
+        #   It is supposed to be a vector of the gravitational acceleration.
+        #   Subsequently, this vector will be subtracted from all the
+        #   acceleration measurements.
+        init_acc = np.array([0.0, 0.0, 0.0])
+        init_acc_range = 10
+        for i in range(init_acc_range):
+            acc, __ = self.measurements[i]
+            init_acc += acc
+        init_acc /= init_acc_range
+        #print('init_acc:', init_acc)
+
+        # Construction of the trajectory
+        self.trajectory = []
+        self.plot_t = []
+        self.plot_x = []
+        self.plot_y = []
+        self.plot_z = []
+        dt = 1 / self.frequency # time period between two data samples
+        time = 0.0 # starting time
+        vel = np.array([0.0, 0.0, 0.0]) # initial velocity
+        pos = np.array([0.0, 0.0, 0.0]) # initial position
+        self.plot_t.append(time)
+        self.plot_x.append(pos[0])
+        self.plot_y.append(pos[1])
+        self.plot_z.append(pos[2])
+        for i in range(len(self.measurements)):
+            time += dt
+            acc, gyr = self.measurements[i]
+            acc = np.array(acc)
+            gyr = np.array(gyr)
+            acc -= init_acc
+            # Euler's Method
+            vel += acc * dt
+            pos += vel * dt
+            # for plotting
+            self.plot_t.append(time)
+            self.plot_x.append(pos[0])
+            self.plot_y.append(pos[1])
+            self.plot_z.append(pos[2])
+            #print(i, acc, gyr)
+            #print(i, acc, type(acc), gyr, type(gyr))
+
+    def draw(self):
+        import matplotlib.pyplot as plt
+        fig = plt.figure().add_subplot(projection='3d')
+        fig.plot(self.plot_x, self.plot_y, self.plot_z, "b.", label='parametric curve')
+
+        fig.set_xlabel('x')
+        fig.set_ylabel('y')
+        fig.set_zlabel('z')
+
+        fig.legend()
+        plt.show()
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", help = "input data file")
+    parser.add_argument("-f", help = "sampling frequency [Hz], e.g. 833, 1660")
+    parser.add_argument("-a", help = "acceleration range (multiple of the gravitational acceleration), e.g. 2, 4, 8")
+    parser.add_argument("-g", help = "gyroscope range [deg/s], e.g. 16, 125, 250, 500, 1000, 2000")
+    parser.add_argument("--grav", help = "gravitational acceleration in m/s^2; 9.80665 by default")
+    parser.add_argument("-q", action = "store_true", help = "suppress warnings")
+    parser.add_argument("--draw", action = "store_true", help = "draw a plot")
+
+    args = parser.parse_args()
+    if args.f:
+        frequency = int(args.f)
+    else:
+        frequency = None
+    if args.a:
+        acc_range = int(args.a)
+    else:
+        acc_range = None
+    if args.g:
+        gyr_range = int(args.g)
+    else:
+        gyr_range = None
+    if args.grav:
+        grav = float(args.grav)
+    else:
+        grav = 9.80665
+    if args.q:
+        quiet = True
+    else:
+        quiet = False
+
+    agtracker = AGTracker(args.input,
+                          frequency = frequency,
+                          acc_range = acc_range,
+                          gyr_range = gyr_range,
+                          grav = grav,
+                          quiet = quiet)
+    agtracker.parse()
+
+    if args.draw:
+        agtracker.draw()
+
+if __name__ == "__main__":
+    main()
