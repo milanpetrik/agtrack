@@ -154,6 +154,7 @@ def main():
     parser.add_argument("-a", help = "acceleration range (multiple of the gravitational acceleration), e.g. 2, 4, 8")
     parser.add_argument("-g", help = "gyroscope range [deg/s], e.g. 16, 125, 250, 500, 1000, 2000")
     parser.add_argument("--grav", help = "gravitational acceleration in m/s^2; 9.80665 by default")
+    parser.add_argument("-q", action = "store_true", help = "suppress warnings")
     parser.add_argument("--draw", action = "store_true", help = "draw a plot")
 
     args = parser.parse_args()
@@ -173,13 +174,18 @@ def main():
         grav = float(args.grav)
     else:
         grav = 9.80665
+    if args.q:
+        quiet = True
+    else:
+        quiet = False
 
     agtracker = AGTracker(args.input,
                           frequency = frequency,
                           acc_range = acc_range,
                           gyr_range = gyr_range,
-                          grav = grav)
-    agtracker.parse()
+                          grav = grav,
+                          quiet = quiet)
+    #agtracker.parse()
 
     if args.draw:
         agtracker.draw()
