@@ -50,10 +50,6 @@ class AGTracker:
         self.measurements = None
         self.trajectory = None
         self.load()
-        self.plot_t = []
-        self.plot_x = []
-        self.plot_y = []
-        self.plot_z = []
 
     def load(self):
         """
@@ -200,19 +196,17 @@ class AGTracker:
         #print('init_acc:', init_acc)
 
         # Construction of the trajectory
-        self.trajectory = []
-        self.plot_t = []
-        self.plot_x = []
-        self.plot_y = []
-        self.plot_z = []
+        #   as a list of (time, pos, vel, acc, gyr) where:
+        #       time ... absolute time in seconds
+        #       pos = (sx, sy, sz) ... position
+        #       vel = (vx, vy, vz) ... velocity
+        #       acc = (ax, ay, az) ... acceleration
+        #       gyr = (gx, gy, gz) ... angular velocity
+        self.trajectory = [(0.0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0))]
         dt = 1 / self.frequency # time period between two data samples
         time = 0.0 # starting time
         vel = np.array([0.0, 0.0, 0.0]) # initial velocity
         pos = np.array([0.0, 0.0, 0.0]) # initial position
-        self.plot_t.append(time)
-        self.plot_x.append(pos[0])
-        self.plot_y.append(pos[1])
-        self.plot_z.append(pos[2])
         for i in range(len(self.measurements)):
             time += dt
             acc, gyr = self.measurements[i]
@@ -222,18 +216,20 @@ class AGTracker:
             # Euler's Method
             vel += acc * dt
             pos += vel * dt
-            # for plotting
-            self.plot_t.append(time)
-            self.plot_x.append(pos[0])
-            self.plot_y.append(pos[1])
-            self.plot_z.append(pos[2])
-            #print(i, acc, gyr)
-            #print(i, acc, type(acc), gyr, type(gyr))
+            # the result
+            self.trajectory.append((time, tuple(pos), tuple(vel), tuple(acc), tuple(gyr)))
 
     def draw(self):
         import matplotlib.pyplot as plt
         fig = plt.figure().add_subplot(projection='3d')
-        fig.plot(self.plot_x, self.plot_y, self.plot_z, "b.", label='parametric curve')
+        plot_x = []
+        plot_y = []
+        plot_z = []
+        for time, (x, y, z), __, __, __ in self.trajectory:
+            plot_x.append(x)
+            plot_y.append(y)
+            plot_z.append(z)
+        fig.plot(plot_x, plot_y, plot_z, "b.", label='parametric curve')
 
         fig.set_xlabel('x')
         fig.set_ylabel('y')
