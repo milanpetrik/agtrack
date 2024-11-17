@@ -6,21 +6,28 @@ from rotations import *
 
 class AGTracker:
     """
-    Attributes:
-        filename (str): name of the file with the measurements from
-            accelerometer and gyroscope
-        frequency (int): frequency in Hz
-        acc_range (int): accelerometer range as a multiple of g
-            (gravitational acceleration)
-        gyr_range (int): gyroscope range in degrees per second
-        grav (float): gravitational acceleration in m*s^(-2); `9.80665` by default
-        measurements (list of (numpy.array, numpy.array)):
-            list of `([ax, ay, az], [gx, gy, gz])` where `[ax, ay, az]` is
-            the acceleration and `[gx, gy, gz]` is the angular velocity
-            given by the gyroscope
-        trajectory (list of numpy.array): the resulting trajectory as a list of
-            positions (i.e. three coordinates)
-        quiet (bool): suppress warnings; `False` by default
+        Attributes:
+            filename (str): name of the file with the measurements from
+                accelerometer and gyroscope
+            frequency (int): frequency in Hz
+            acc_range (int): accelerometer range as a multiple of g
+                (gravitational acceleration)
+            gyr_range (int): gyroscope range in degrees per second
+            grav (float): gravitational acceleration in m*s^(-2); `9.80665` by default
+            measurements (list of (numpy.array, numpy.array)):
+                list of `([ax, ay, az], [gx, gy, gz])` where `[ax, ay, az]` is
+                the acceleration and `[gx, gy, gz]` is the angular velocity
+                given by the gyroscope
+            trajectory (list of numpy.array): the resulting trajectory as a
+                list of time-stamped triplets (position, velocity, acceleration);
+                it is a list of (time, pos, vel, acc, gyr) where:
+
+                    * time ... absolute time in seconds
+                    * pos = (sx, sy, sz) ... position
+                    * vel = (vx, vy, vz) ... velocity
+                    * acc = (ax, ay, az) ... acceleration
+
+            quiet (bool): suppress warnings; `False` by default
     """
 
     def __init__(self,
@@ -56,11 +63,15 @@ class AGTracker:
             Read a text file with the measurements from accelerometer and
                 gyroscope.
 
-            The data are parsed and saved to the `measurements` attribute:
+            The data are processed and saved to the `measurements` attribute,
+                in particular:
 
                 * The acceleration data are multiplied by `self.acc_range/2`
                     and by `self.grav`.
                 * The gyroscope data are multiplied by `self.gyr_range/2`.
+
+            (Hence, the initial acceleration is not subtracted in this method.
+                This is done later in `parse()`.)
         """
         coord_names = ['x', 'y', 'z'] # this is for reporting an error
         if self.acc_range != None:
@@ -124,8 +135,8 @@ class AGTracker:
                                 sat_counter[i] = 0
                                 sat_begin[i] = None
                     # save data
-                    acceleration = [v*acc_coef*self.grav for v in numbers[:3]]
-                    angular_velocity = [v*gyr_coef for v in numbers[3:]]
+                    acceleration = [value*acc_coef*self.grav for value in numbers[:3]]
+                    angular_velocity = [value*gyr_coef for value in numbers[3:]]
                     #self.measurements.append((tuple(acceleration), tuple(angular_velocity)))
                     self.measurements.append((np.array(acceleration), np.array(angular_velocity)))
 
@@ -181,6 +192,10 @@ class AGTracker:
 #                    self.history.append(history_item)
 #                    time += self.period
     def parse(self):
+        """
+            Parses the measured data stored in `self.measurements` and
+                constructs the trajectory to `self.trajectory`.
+        """
         # The initial acceleration
         #   It will be computed as the average of the first n measurements,
         #   where n is the values of `init_acc_range`.
@@ -193,11 +208,8 @@ class AGTracker:
             acc, __ = self.measurements[i]
             init_acc += acc
         init_acc /= init_acc_range
-        #print('init_acc:', init_acc)
-
         # The initial rotation as a matrix
         rotation = np.identity(3)
-
         # Construction of the trajectory
         #   as a list of (time, pos, vel, acc, gyr) where:
         #       time ... absolute time in seconds
@@ -214,6 +226,7 @@ class AGTracker:
             acc_meas, gyr_meas = self.measurements[i] # measured acceleration and gyroscope angular velocity
             acc_meas = np.array(acc_meas)
             gyr_meas = np.array(gyr_meas)
+            #print('gyr_meas:', gyr_meas)
             acc_meas -= init_acc
             # gyroscope
             rotation_in_current_coords = get_composed_rotation(gyr_meas[0]*dt, gyr_meas[1]*dt, gyr_meas[2]*dt)
