@@ -195,54 +195,67 @@ class AGTracker:
         init_acc /= init_acc_range
         #print('init_acc:', init_acc)
 
+        # The initial rotation as a matrix
+        rotation = np.identity(3)
+
         # Construction of the trajectory
         #   as a list of (time, pos, vel, acc, gyr) where:
         #       time ... absolute time in seconds
         #       pos = (sx, sy, sz) ... position
         #       vel = (vx, vy, vz) ... velocity
         #       acc = (ax, ay, az) ... acceleration
-        #       gyr = (gx, gy, gz) ... angular velocity
-        self.trajectory = [(0.0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0))]
+        self.trajectory = [(0.0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0))]
         dt = 1 / self.frequency # time period between two data samples
         time = 0.0 # starting time
         vel = np.array([0.0, 0.0, 0.0]) # initial velocity
         pos = np.array([0.0, 0.0, 0.0]) # initial position
         for i in range(len(self.measurements)):
             time += dt
-            acc, gyr = self.measurements[i]
-            acc = np.array(acc)
-            gyr = np.array(gyr)
-            acc -= init_acc
+            acc_meas, gyr_meas = self.measurements[i] # measured acceleration and gyroscope angular velocity
+            acc_meas = np.array(acc_meas)
+            gyr_meas = np.array(gyr_meas)
+            acc_meas -= init_acc
+            # gyroscope
+            rotation_in_current_coords = get_composed_rotation(gyr_meas[0]*dt, gyr_meas[1]*dt, gyr_meas[2]*dt)
+            rotation_in_starting_coords = rotation @ rotation_in_current_coords @ inv(rotation)
+            rotation = rotation_in_starting_coords @ rotation
+            acc = rotation @ acc_meas
             # Euler's Method
             vel += acc * dt
             pos += vel * dt
             # the result
-            self.trajectory.append((time, tuple(pos), tuple(vel), tuple(acc), tuple(gyr)))
+            self.trajectory.append((time, tuple(pos), tuple(vel), tuple(acc)))
 
     def draw_3D(self):
+        """
+            Draw `self.trajectory` as a 3D plot.
+        """
         import matplotlib.pyplot as plt
         fig = plt.figure().add_subplot(projection='3d')
         plot_x = []
         plot_y = []
         plot_z = []
-        for time, (x, y, z), __, __, __ in self.trajectory:
+        for time, (x, y, z), __, __ in self.trajectory:
             plot_x.append(x)
             plot_y.append(y)
             plot_z.append(z)
         fig.plot(plot_x, plot_y, plot_z, "b.", label='Trajectory')
-
         fig.set_xlabel('x')
         fig.set_ylabel('y')
         fig.set_zlabel('z')
-
         fig.legend()
         plt.show()
 
     def draw_2D(self):
+        """
+            Draw `self.trajectory` as a 2D plot involving only x and y
+                coordinates.
+        """
         import matplotlib.pyplot as plt
         plot_x = []
         plot_y = []
-        for time, (x, y, z), __, __, __ in self.trajectory:
+        print(self.trajectory[0])
+        for time, (x, y, z), __, __ in self.trajectory:
             plot_x.append(x)
             plot_y.append(y)
         plt.plot(plot_x, plot_y, "b.", label="Trajectory")
