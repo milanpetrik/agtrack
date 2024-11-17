@@ -219,7 +219,7 @@ class AGTracker:
             # the result
             self.trajectory.append((time, tuple(pos), tuple(vel), tuple(acc), tuple(gyr)))
 
-    def draw(self):
+    def draw_3D(self):
         import matplotlib.pyplot as plt
         fig = plt.figure().add_subplot(projection='3d')
         plot_x = []
@@ -229,13 +229,25 @@ class AGTracker:
             plot_x.append(x)
             plot_y.append(y)
             plot_z.append(z)
-        fig.plot(plot_x, plot_y, plot_z, "b.", label='parametric curve')
+        fig.plot(plot_x, plot_y, plot_z, "b.", label='Trajectory')
 
         fig.set_xlabel('x')
         fig.set_ylabel('y')
         fig.set_zlabel('z')
 
         fig.legend()
+        plt.show()
+
+    def draw_2D(self):
+        import matplotlib.pyplot as plt
+        plot_x = []
+        plot_y = []
+        for time, (x, y, z), __, __, __ in self.trajectory:
+            plot_x.append(x)
+            plot_y.append(y)
+        plt.plot(plot_x, plot_y, "b.", label="Trajectory")
+        plt.legend()
+        plt.axis('equal')
         plt.show()
 
 def main():
@@ -246,7 +258,8 @@ def main():
     parser.add_argument("-g", help = "gyroscope range [deg/s], e.g. 16, 125, 250, 500, 1000, 2000")
     parser.add_argument("--grav", help = "gravitational acceleration in m/s^2; 9.80665 by default")
     parser.add_argument("-q", action = "store_true", help = "suppress warnings")
-    parser.add_argument("--draw", action = "store_true", help = "draw a plot")
+    parser.add_argument("--draw", action = "store_true", help = "draw a 3D plot")
+    parser.add_argument("--draw2d", action = "store_true", help = "draw a 2D plot")
 
     args = parser.parse_args()
     if args.f:
@@ -279,7 +292,10 @@ def main():
     agtracker.parse()
 
     if args.draw:
-        agtracker.draw()
+        agtracker.draw_3D()
+
+    if args.draw2d:
+        agtracker.draw_2D()
 
 if __name__ == "__main__":
     main()
