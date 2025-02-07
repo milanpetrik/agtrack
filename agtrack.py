@@ -259,7 +259,7 @@ class AGTracker:
         fig.legend()
         plt.show()
 
-    def draw_2D(self):
+    def draw_2D_xy(self):
         """
             Draw `self.trajectory` as a 2D plot involving only x and y
                 coordinates.
@@ -285,7 +285,7 @@ def main():
     parser.add_argument("--grav", help = "gravitational acceleration in m/s^2; 9.80665 by default")
     parser.add_argument("-q", action = "store_true", help = "suppress warnings")
     parser.add_argument("--draw", action = "store_true", help = "draw a 3D plot")
-    parser.add_argument("--draw2d", action = "store_true", help = "draw a 2D plot")
+    parser.add_argument("--drawxy", action = "store_true", help = "draw a 2D plot (x and y axes)")
 
     args = parser.parse_args()
     if args.f:
@@ -320,8 +320,8 @@ def main():
     if args.draw:
         agtracker.draw_3D()
 
-    if args.draw2d:
-        agtracker.draw_2D()
+    if args.drawxy:
+        agtracker.draw_2D_xy()
 
 if __name__ == "__main__":
     main()
