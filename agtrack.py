@@ -290,7 +290,11 @@ class AGTracker:
         plt.show()
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+            prog = 'agtrack.py',
+            description = 'Loads and parses a file with the measurements from accelerometer and gyroscope.',
+            epilog = '...'
+        )
     parser.add_argument("input", help = "input data file")
     parser.add_argument("-f", help = "sampling frequency [Hz], e.g. 833, 1660")
     parser.add_argument("-a", help = "acceleration range (multiple of the gravitational acceleration), e.g. 2, 4, 8")
