@@ -6,28 +6,36 @@ from rotations import *
 
 class AGTracker:
     """
+        Loads and parses a file with the measurements from accelerometer and
+            gyroscope.
+        Produces a trajectory = a time sequence of (x, y, z) positions.
+
         Attributes:
             filename (str): name of the file with the measurements from
                 accelerometer and gyroscope
-            frequency (int): frequency in Hz
-            acc_range (int): accelerometer range as a multiple of g
-                (gravitational acceleration)
-            gyr_range (int): gyroscope range in degrees per second
-            grav (float): gravitational acceleration in m*s^(-2); `9.80665` by default
+            frequency (int): frequency [Hz]
+            acc_range (int): accelerometer range as a multiple of gravitational
+                acceleration (given by the `grav` attribute)
+            gyr_range (int): gyroscope range [deg/s]
+            grav (float): gravitational acceleration [m/s^2];
+                `9.80665` by default
+            quiet (bool): suppress warnings; `False` by default
             measurements (list of (numpy.array, numpy.array)):
-                list of `([ax, ay, az], [gx, gy, gz])` where `[ax, ay, az]` is
-                the acceleration and `[gx, gy, gz]` is the angular velocity
-                given by the gyroscope
-            trajectory (list of numpy.array): the resulting trajectory as a
+                list of `([ax, ay, az], [gx, gy, gz])` where
+                `[ax, ay, az]` is the acceleration [m/s^2] and 
+                `[gx, gy, gz]` is the angular velocity [deg/s] given by the gyroscope;
+                The content of `measurements` is produced by the `load()` method.
+                Note: the initial acceleration is not subtracted here.
+            trajectory (list): the resulting trajectory as a
                 list of time-stamped triplets (position, velocity, acceleration);
-                it is a list of (time, pos, vel, acc, gyr) where:
+                it is a list of (time, pos, vel, acc) where:
 
                     * time ... absolute time in seconds
                     * pos = (sx, sy, sz) ... position
                     * vel = (vx, vy, vz) ... velocity
                     * acc = (ax, ay, az) ... acceleration
 
-            quiet (bool): suppress warnings; `False` by default
+                The content of `trajectory` is produced by the `parse()` method.
     """
 
     def __init__(self,
@@ -35,17 +43,17 @@ class AGTracker:
                  frequency = None,
                  acc_range = None,
                  gyr_range = None,
-                 grav = 9.80665,
+                 grav = 9.80665, # [m/s^2]
                  quiet = False):
         """
         Args:
             filename (str): name of the file with the measurements from
                 accelerometer and gyroscope
-            frequency (int): frequency in Hz
-            acc_range (int): accelerometer range as a multiple of g
-                (gravitational acceleration)
-            gyr_range (int): gyroscope range in degrees per second
-            grav (float): gravitational acceleration in m*s^(-2); `9.80665` by default
+            frequency (int): frequency [Hz]
+            acc_range (int): accelerometer range as a multiple of
+                gravitational acceleration
+            gyr_range (int): gyroscope range [deg/s]
+            grav (float): gravitational acceleration [m/s^2]; `9.80665` by default
             quiet (bool): suppress warnings; `False` by default
         """
         self.filename = filename
@@ -85,9 +93,10 @@ class AGTracker:
         self.measurements = []
         with open(self.filename) as f:
             line_counter = 0
-            # saturation counters count occurrences of `2.0` in the input data file
+            # Saturation counters count occurrences of `2.0` in the input data file
             # for each coordinate of the acceleration and the angular speed given
-            # by the gyroscope
+            # by the gyroscope.
+            # If this happens "too often", a warning is printed.
             sat_counter = 6 * [0]
             sat_begin = 6 * [None]
             for line in f:
@@ -139,6 +148,10 @@ class AGTracker:
                     angular_velocity = [value*gyr_coef for value in numbers[3:]]
                     #self.measurements.append((tuple(acceleration), tuple(angular_velocity)))
                     self.measurements.append((np.array(acceleration), np.array(angular_velocity)))
+                else:
+                    # nothing here
+                    # hence the lines that are not understood are ignored
+                    pass
 
 #    def load_file(self, file_name, frequency, acc_range, gyr_range):
 #        self.history = []
@@ -196,7 +209,7 @@ class AGTracker:
             Parses the measured data stored in `self.measurements` and
                 constructs the trajectory to `self.trajectory`.
         """
-        # The initial acceleration
+        # The initial acceleration:
         #   It will be computed as the average of the first n measurements,
         #   where n is the values of `init_acc_range`.
         #   It is supposed to be a vector of the gravitational acceleration.
@@ -211,7 +224,7 @@ class AGTracker:
         # The initial rotation as a matrix
         rotation = np.identity(3)
         # Construction of the trajectory
-        #   as a list of (time, pos, vel, acc, gyr) where:
+        # as a list of (time, pos, vel, acc, gyr) where:
         #       time ... absolute time in seconds
         #       pos = (sx, sy, sz) ... position
         #       vel = (vx, vy, vz) ... velocity
