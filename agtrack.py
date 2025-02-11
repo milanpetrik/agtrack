@@ -153,57 +153,6 @@ class AGTracker:
                     # hence the lines that are not understood are ignored
                     pass
 
-#    def load_file(self, file_name, frequency, acc_range, gyr_range):
-#        self.history = []
-#        self.file_name = file_name
-#        self.frequency = frequency
-#        self.acc_range = acc_range
-#        self.gyr_range = gyr_range
-#        self.acc_coef = self.acc_range / 2
-#        self.gyr_coef = self.gyr_range / 2
-#        self.period = 1 / self.frequency
-#        self.initial_acceleration = None
-#        self.rotation = np.identity(3) # matrix of a rotation from the beginning of the movement
-#        time = 0.0
-#        velocity = [0.0, 0.0, 0.0]
-#        position = [0.0, 0.0, 0.0]
-#        #angle = [0.0, 0.0, 0.0]
-#        with open(self.file_name, "r") as input_file:
-#            first = True
-#            for line in input_file:
-#                if first: # ignore the first line of the file
-#                    first = False
-#                else:
-#                    words = line.strip().replace(',', '.').split(';') # using strip() to remove "\n" at the end of the line
-#                    numbers = list(map(float, words))
-#                    acceleration_in_current_coordinates = numbers[:3]
-#                    for i in range(len(acceleration_in_current_coordinates)):
-#                        acceleration_in_current_coordinates[i] *= self.acc_coef * grav_accel
-#                    angle_velocity = numbers[3:]
-#                    for i in range(len(angle_velocity)):
-#                        angle_velocity[i] *= self.gyr_coef
-#                    angle_velocity = np.asarray(angle_velocity)
-#                    angle_change_in_current_coordinates = angle_velocity * self.period
-#                    if self.initial_acceleration == None:
-#                        self.initial_acceleration = copy.copy(acceleration_in_current_coordinates)
-#                    rotation_in_current_coordinates = get_composed_rotation(*angle_change_in_current_coordinates)
-#                    rotation_in_starting_coordinates = self.rotation @ rotation_in_current_coordinates @ inv(self.rotation)
-#                    self.rotation = rotation_in_starting_coordinates @ self.rotation
-#                    acceleration = self.rotation @ acceleration_in_current_coordinates
-#                    for i in range(3):
-#                        acceleration[i] -= self.initial_acceleration[i]
-#                        velocity[i] += acceleration[i] * self.period
-#                        position[i] += velocity[i] * self.period
-#                        #angle[i] += angle_velocity[i] * self.period
-#                    history_item = {}
-#                    history_item['time'] = time
-#                    history_item['acceleration'] = copy.copy(acceleration)
-#                    history_item['velocity'] = copy.copy(velocity)
-#                    history_item['position'] = copy.copy(position)
-#                    history_item['angle velocity'] = copy.copy(angle_velocity)
-#                    #history_item['angle'] = copy.copy(angle)
-#                    self.history.append(history_item)
-#                    time += self.period
     def parse(self):
         """
             Parses the measured data stored in `self.measurements` and
