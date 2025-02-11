@@ -191,12 +191,16 @@ class AGTracker:
             # subtract the initial acceleration
             #   (rounding to 10 decimal places is not necessary,
             #   it just makes nicer the results on artifical data)
-            acc_meas = np.round(acc_meas - init_acc, 10)
+            #acc_meas = np.round(acc_meas - init_acc, 10)
             # gyroscope
             rotation_in_current_coords = get_composed_rotation(gyr_meas[0]*dt, gyr_meas[1]*dt, gyr_meas[2]*dt)
             rotation_in_starting_coords = rotation @ rotation_in_current_coords @ inv(rotation)
             rotation = rotation_in_starting_coords @ rotation
             acc = rotation @ acc_meas
+            # subtract the initial acceleration
+            #   (rounding to 10 decimal places is not necessary,
+            #   it just makes nicer the results on artifical data)
+            acc = np.round(acc - init_acc, 10)
             # Euler's Method
             vel += acc * dt
             pos += vel * dt
