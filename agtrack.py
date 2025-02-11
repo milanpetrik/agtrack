@@ -30,10 +30,10 @@ class AGTracker:
                 list of time-stamped triplets (position, velocity, acceleration);
                 it is a list of (time, pos, vel, acc) where:
 
-                    * time ... absolute time in seconds
-                    * pos = (sx, sy, sz) ... position
-                    * vel = (vx, vy, vz) ... velocity
-                    * acc = (ax, ay, az) ... acceleration
+                    * time ... absolute time [s]
+                    * pos = (sx, sy, sz) ... position [m]
+                    * vel = (vx, vy, vz) ... velocity [m/s]
+                    * acc = (ax, ay, az) ... acceleration [m/s^2]
 
                 The content of `trajectory` is produced by the `parse()` method.
     """
@@ -160,7 +160,7 @@ class AGTracker:
         """
         # The initial acceleration:
         #   It will be computed as the average of the first n measurements,
-        #   where n is the values of `init_acc_range`.
+        #   where n = init_acc_range.
         #   It is supposed to be a vector of the gravitational acceleration.
         #   Subsequently, this vector will be subtracted from all the
         #   acceleration measurements.
@@ -188,8 +188,10 @@ class AGTracker:
             acc_meas, gyr_meas = self.measurements[i] # measured acceleration and gyroscope angular velocity
             acc_meas = np.array(acc_meas)
             gyr_meas = np.array(gyr_meas)
-            #print('gyr_meas:', gyr_meas)
-            acc_meas -= init_acc
+            # subtract the initial acceleration
+            #   (rounding to 10 decimal places is not necessary,
+            #   it just makes nicer the results on artifical data)
+            acc_meas = np.round(acc_meas - init_acc, 10)
             # gyroscope
             rotation_in_current_coords = get_composed_rotation(gyr_meas[0]*dt, gyr_meas[1]*dt, gyr_meas[2]*dt)
             rotation_in_starting_coords = rotation @ rotation_in_current_coords @ inv(rotation)
@@ -281,7 +283,11 @@ def main():
                           gyr_range = gyr_range,
                           grav = grav,
                           quiet = quiet)
+    #for item in agtracker.measurements:
+    #    print(item)
     agtracker.parse()
+    #for time, pos, vel, acc in agtracker.trajectory:
+    #    print(round(time, 2), acc)
 
     if args.draw:
         agtracker.draw_3D()
