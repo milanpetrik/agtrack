@@ -206,6 +206,7 @@ class AGTracker:
             pos += vel * dt
             # the result
             self.trajectory.append((time, tuple(pos), tuple(vel), tuple(acc)))
+            #print(round(time, 2), np.round(pos, 2), np.round(vel, 2), np.round(acc, 2))
 
     def draw_3D(self):
         """
@@ -227,19 +228,31 @@ class AGTracker:
         fig.legend()
         plt.show()
 
-    def draw_2D_xy(self):
+    def draw_2D(self, axes = "xy"):
         """
-            Draw `self.trajectory` as a 2D plot involving only x and y
-                coordinates.
+            Draw `self.trajectory` as a 2D plot involving only two coordinates.
+
+            Args:
+                axes (str): which coordinates are to be drawn;
+                    can be one of: "xy", "yz", "xz"
         """
         import matplotlib.pyplot as plt
-        plot_x = []
-        plot_y = []
-        print(self.trajectory[0])
+        plot_a = []
+        plot_b = []
+        #print(self.trajectory[0])
         for time, (x, y, z), __, __ in self.trajectory:
-            plot_x.append(x)
-            plot_y.append(y)
-        plt.plot(plot_x, plot_y, "b.", label="Trajectory")
+            if axes == "xy":
+                plot_a.append(x)
+                plot_b.append(y)
+            elif axes == "yz":
+                plot_a.append(y)
+                plot_b.append(z)
+            elif axes == "xz":
+                plot_a.append(x)
+                plot_b.append(z)
+            else:
+                raise Exception('Do not understand which axes to draw: {}'.format(axes))
+        plt.plot(plot_a, plot_b, "b.", label="Trajectory")
         plt.legend()
         plt.axis('equal')
         plt.show()
@@ -258,6 +271,8 @@ def main():
     parser.add_argument("-q", action = "store_true", help = "suppress warnings")
     parser.add_argument("--draw", action = "store_true", help = "draw a 3D plot")
     parser.add_argument("--drawxy", action = "store_true", help = "draw a 2D plot (x and y axes)")
+    parser.add_argument("--drawyz", action = "store_true", help = "draw a 2D plot (y and z axes)")
+    parser.add_argument("--drawxz", action = "store_true", help = "draw a 2D plot (x and z axes)")
 
     args = parser.parse_args()
     if args.f:
@@ -297,7 +312,13 @@ def main():
         agtracker.draw_3D()
 
     if args.drawxy:
-        agtracker.draw_2D_xy()
+        agtracker.draw_2D("xy")
+
+    if args.drawyz:
+        agtracker.draw_2D("yz")
+
+    if args.drawxz:
+        agtracker.draw_2D("xz")
 
 if __name__ == "__main__":
     main()
