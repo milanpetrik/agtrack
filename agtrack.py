@@ -4,32 +4,48 @@ import argparse
 import numpy as np
 from numpy.linalg import inv 
 
-def get_rotation_Z(phi):    #phi is in degrees, returns matrix of the rotation
-    phi_d = math.radians(phi)
-    return np.array([[math.cos(phi_d),-math.sin(phi_d),0],
-                     [math.sin(phi_d),math.cos(phi_d),0],
-                     [0,0,1]])
-
-def get_rotation_Y(phi):    #phi is in degrees, returns matrix of the rotation
-    phi_d = math.radians(phi)
-    return np.array([[math.cos(phi_d),0, math.sin(phi_d)],
-                     [0,1,0],
-                     [-math.sin(phi_d),0,math.cos(phi_d)]])
-
-def get_rotation_X(phi):    #phi is in degrees, returns matrix of the rotation
+def get_rotation_X(phi):
+    """
+        Args:
+            phi (float): angle in degrees
+        Returns (numpy.array): matrix of the rotation around the x-axis
+    """
     phi_d = math.radians(phi)
     return np.array([[1,0,0],
                      [0, math.cos(phi_d),-math.sin(phi_d)],
                      [0, math.sin(phi_d),math.cos(phi_d)]])
 
+def get_rotation_Y(phi):
+    """
+        Args:
+            phi (float): angle in degrees
+        Returns (numpy.array): matrix of the rotation around the y-axis
+    """
+    phi_d = math.radians(phi)
+    return np.array([[math.cos(phi_d),0, math.sin(phi_d)],
+                     [0,1,0],
+                     [-math.sin(phi_d),0,math.cos(phi_d)]])
+
+def get_rotation_Z(phi):
+    """
+        Args:
+            phi (float): angle in degrees
+        Returns (numpy.array): matrix of the rotation around the z-axis
+    """
+    phi_d = math.radians(phi)
+    return np.array([[math.cos(phi_d),-math.sin(phi_d),0],
+                     [math.sin(phi_d),math.cos(phi_d),0],
+                     [0,0,1]])
+
 def get_composed_rotation(phi_X, phi_Y, phi_Z): 
-    # angles in degrees, returns matrix of the composed rotation
-    # order of matrix multiplication (rotations) must be verified!!!
-    # at the moment Rot_X is applied first
-    # later rotation must multiply earlier from the left
-    phi_X_d = math.radians(phi_X)
-    phi_Y_d = math.radians(phi_Y)
-    phi_Z_d = math.radians(phi_Z)
+    """
+        Args:
+            phi_X (float): angle in degrees of the rotation around the x-axis
+            phi_Y (float): angle in degrees of the rotation around the y-axis
+            phi_Z (float): angle in degrees of the rotation around the z-axis
+        Returns (numpy.array): matrix of the composed rotation around the
+            x-axis, then the y-axis, and finally the z-axis
+    """
     return get_rotation_Z(phi_Z) @ get_rotation_Y(phi_Y) @ get_rotation_X(phi_X)
 
 class AGTracker:
@@ -71,7 +87,7 @@ class AGTracker:
                  frequency = None,
                  acc_range = None,
                  gyr_range = None,
-                 grav = 9.80665, # [m/s^2]
+                 grav = 9.80665, # gravitational acceleration in [m/s^2]
                  quiet = False):
         """
         Args:
@@ -267,7 +283,6 @@ class AGTracker:
         import matplotlib.pyplot as plt
         plot_a = []
         plot_b = []
-        #print(self.trajectory[0])
         for time, (x, y, z), __, __ in self.trajectory:
             if axes == "xy":
                 plot_a.append(x)
@@ -330,11 +345,7 @@ def main():
                           gyr_range = gyr_range,
                           grav = grav,
                           quiet = quiet)
-    #for item in agtracker.measurements:
-    #    print(item)
     agtracker.parse()
-    #for time, pos, vel, acc in agtracker.trajectory:
-    #    print(round(time, 2), acc)
 
     if args.draw:
         agtracker.draw_3D()
